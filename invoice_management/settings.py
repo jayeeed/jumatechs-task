@@ -31,7 +31,13 @@ SECRET_KEY = "django-insecure-so(_h0hw4g*o1f=6&)3*huyr!l03=!)ge55blihy^j%7^o2m(&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["invoice.loca.lt", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [
+    "invoice.loca.lt",
+    "localhost",
+    "127.0.0.1",
+    "jumatechs-task.onrender.com",
+    "jumatechs-invoice.netlify.app",
+]
 
 
 # Application definition
@@ -189,6 +195,8 @@ REDOC_SETTINGS = {
 CORS_ALLOWED_ORIGINS = [
     "https://invoice.loca.lt",
     "http://localhost:8080",
+    "https://jumatechs-task.onrender.com",
+    "https://jumatechs-invoice.netlify.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
