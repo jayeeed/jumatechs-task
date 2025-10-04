@@ -30,7 +30,7 @@ SECRET_KEY = "django-insecure-so(_h0hw4g*o1f=6&)3*huyr!l03=!)ge55blihy^j%7^o2m(&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["invoice.loca.lt", "localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
+    "corsheaders",
     "invoices",
     "transactions",
     "authentication",
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -155,3 +157,35 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "ROTATE_REFRESH_TOKENS": True,
 }
+
+# drf-yasg settings
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Enter: Bearer &lt;token&gt;",
+        }
+    },
+    "USE_SESSION_AUTH": False,
+}
+
+REDOC_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Enter: Bearer &lt;token&gt;",
+        }
+    }
+}
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS = [
+    "https://invoice.loca.lt",
+    "http://localhost:8080",
+]
+
+CORS_ALLOW_CREDENTIALS = True
