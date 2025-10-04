@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -16,7 +16,8 @@ class InvoiceListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Invoice.objects.all()
+        # Return only invoices created by the current user
+        return Invoice.objects.filter(created_by=self.request.user)
 
     def perform_create(self, serializer):
         invoice = serializer.save(created_by=self.request.user)
@@ -28,12 +29,14 @@ class InvoiceListCreateView(generics.ListCreateAPIView):
                 # Ensure proper types for quantity and unit_price
                 item_data["quantity"] = int(item_data.get("quantity", 0))
                 item_data["unit_price"] = Decimal(str(item_data.get("unit_price", 0)))
+                # Using InvoiceItem model manager directly
                 InvoiceItem.objects.create(invoice=invoice, **item_data)
 
             # Calculate total amount using the model method
             invoice.calculate_total()
 
             # Create sale transaction
+            # Using Transaction model manager directly
             Transaction.objects.create(
                 invoice=invoice,
                 transaction_type="sale",
@@ -42,32 +45,49 @@ class InvoiceListCreateView(generics.ListCreateAPIView):
             )
 
 
-class InvoiceDetailView(generics.RetrieveUpdateAPIView):
+class InvoiceDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Invoice.objects.all()
+        # Return only invoices created by the current user
+        return Invoice.objects.filter(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        """Allow updating invoices at any time, regardless of status"""
+        invoice = serializer.save()
+        # Recalculate total if items data is provided
+        items_data = self.request.data.get("items", [])
+        if items_data:
+            # Clear existing items
+            invoice.items.all().delete()
+            # Create new items
+            for item_data in items_data:
+                item_data["quantity"] = int(item_data.get("quantity", 0))
+                item_data["unit_price"] = Decimal(str(item_data.get("unit_price", 0)))
+                # Using InvoiceItem model manager directly
+                InvoiceItem.objects.create(invoice=invoice, **item_data)
+
+            # Recalculate total amount
+            invoice.calculate_total()
 
 
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def mark_invoice_paid(request, pk):
     try:
-        invoice = Invoice.objects.get(pk=pk)
+        # Using get_object_or_404 helper
+        invoice = get_object_or_404(Invoice, pk=pk, created_by=request.user)
 
-        # Validate invoice status before payment
-        if invoice.status != "pending":
-            return Response(
-                {"error": "Only pending invoices can be marked as paid"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # Removed validation that only pending invoices can be marked as paid
+        # to allow users to edit invoices at any time
 
         # Update invoice status
         invoice.status = "paid"
         invoice.save()
 
         # Create payment transaction
+        # Using Transaction model manager directly
         Transaction.objects.create(
             invoice=invoice,
             transaction_type="payment",
@@ -77,10 +97,26 @@ def mark_invoice_paid(request, pk):
 
         serializer = InvoiceSerializer(invoice)
         return Response(serializer.data)
-    except Invoice.DoesNotExist:
+    except (ValueError, TypeError) as e:
         return Response(
-            {"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND
+            {"error": "Invalid data type in request"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def mark_invoice_pending(request, pk):
+    try:
+        # Using get_object_or_404 helper
+        invoice = get_object_or_404(Invoice, pk=pk, created_by=request.user)
+
+        # Update invoice status to pending
+        invoice.status = "pending"
+        invoice.save()
+
+        serializer = InvoiceSerializer(invoice)
+        return Response(serializer.data)
     except (ValueError, TypeError) as e:
         return Response(
             {"error": "Invalid data type in request"},

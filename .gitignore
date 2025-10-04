@@ -4,3 +4,4 @@
 db.sqlite3
 requirements_old.txt
 __pycache__
+frontend

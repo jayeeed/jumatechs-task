@@ -60,7 +60,7 @@ class SimpleInvoiceTest(TestCase):
         self.assertEqual(invoice.status, "paid")
 
         # Create a payment transaction
-        payment_transaction = Transaction.objects.create(
+        Transaction.objects.create(
             invoice=invoice,
             transaction_type="payment",
             amount=invoice.total_amount,
@@ -271,3 +271,294 @@ class SimpleInvoiceTest(TestCase):
         # Refresh from database and check again
         item.refresh_from_db()
         self.assertEqual(item.total_price, 75.00)
+
+
+class InvoiceEditDeleteTest(TestCase):
+    """Test cases for editing and deleting invoices at any time"""
+
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.invoice = Invoice.objects.create(
+            reference_number="INV-010",
+            customer_name="Test Customer",
+            customer_email="customer@example.com",
+            total_amount=100.00,
+            created_by=self.user,
+            status="paid",  # Start with a paid invoice to test editing at any time
+        )
+
+    def test_edit_invoice_at_any_time(self):
+        """Test that users can edit invoices regardless of status"""
+        # Verify initial state
+        self.assertEqual(self.invoice.customer_name, "Test Customer")
+        self.assertEqual(self.invoice.status, "paid")
+
+        # Update invoice details
+        self.invoice.customer_name = "Updated Customer"
+        self.invoice.status = "pending"  # Change status back to pending
+        self.invoice.save()
+
+        # Refresh from database
+        self.invoice.refresh_from_db()
+
+        # Verify changes were saved
+        self.assertEqual(self.invoice.customer_name, "Updated Customer")
+        self.assertEqual(self.invoice.status, "pending")
+
+    def test_delete_invoice_at_any_time(self):
+        """Test that users can delete invoices regardless of status"""
+        invoice_id = self.invoice.pk
+        # Verify invoice exists
+        invoice_exists = Invoice.objects.filter(pk=invoice_id).count() > 0
+        self.assertTrue(invoice_exists)
+
+        # Delete the invoice
+        self.invoice.delete()
+
+        # Verify invoice no longer exists
+        invoice_exists = Invoice.objects.filter(pk=invoice_id).count() > 0
+        self.assertFalse(invoice_exists)
+
+    def test_edit_invoice_items_at_any_time(self):
+        """Test that users can edit invoice items regardless of invoice status"""
+        # Create an invoice item
+        item = InvoiceItem.objects.create(
+            invoice=self.invoice,
+            description="Original Item",
+            quantity=2,
+            unit_price=50.00,
+            total_price=100.00,
+        )
+
+        # Verify initial state
+        self.assertEqual(item.description, "Original Item")
+        self.assertEqual(self.invoice.status, "paid")
+
+        # Update the item
+        item.description = "Updated Item"
+        item.quantity = 3
+        item.unit_price = 75.00
+        item.save()
+
+        # Refresh from database
+        item.refresh_from_db()
+
+        # Verify changes were saved
+        self.assertEqual(item.description, "Updated Item")
+        self.assertEqual(item.quantity, 3)
+        self.assertEqual(item.unit_price, 75.00)
+        self.assertEqual(item.total_price, 225.00)  # Should be recalculated
+
+
+class MarkPendingTest(TestCase):
+    """Test cases for marking invoices as pending"""
+
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.invoice = Invoice.objects.create(
+            reference_number="INV-011",
+            customer_name="Test Customer",
+            customer_email="customer@example.com",
+            total_amount=100.00,
+            created_by=self.user,
+            status="paid",  # Start with a paid invoice
+        )
+
+    def test_mark_paid_invoice_as_pending(self):
+        """Test marking a paid invoice as pending"""
+        # Verify initial state
+        self.assertEqual(self.invoice.status, "paid")
+
+        # Mark invoice as pending
+        self.invoice.status = "pending"
+        self.invoice.save()
+
+        # Refresh from database
+        self.invoice.refresh_from_db()
+
+        # Verify status was updated
+        self.assertEqual(self.invoice.status, "pending")
+
+    def test_mark_cancelled_invoice_as_pending(self):
+        """Test marking a cancelled invoice as pending"""
+        # Change invoice to cancelled
+        self.invoice.status = "cancelled"
+        self.invoice.save()
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, "cancelled")
+
+        # Mark invoice as pending
+        self.invoice.status = "pending"
+        self.invoice.save()
+
+        # Refresh from database
+        self.invoice.refresh_from_db()
+
+        # Verify status was updated
+        self.assertEqual(self.invoice.status, "pending")
+
+
+class MarkPendingAPITest(TestCase):
+    """Test cases for the mark pending API endpoint"""
+
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.invoice = Invoice.objects.create(
+            reference_number="INV-012",
+            customer_name="Test Customer",
+            customer_email="customer@example.com",
+            total_amount=100.00,
+            created_by=self.user,
+            status="paid",  # Start with a paid invoice
+        )
+
+    def test_mark_pending_api_endpoint(self):
+        """Test the mark pending API endpoint"""
+        # Login the user
+        self.client.login(username="testuser", password="testpass123")
+
+        # Make API call to mark invoice as pending
+        response = self.client.patch(
+            f"/api/invoices/{self.invoice.pk}/mark-pending/",
+            content_type="application/json",
+        )
+
+        # Check that the response is successful
+        self.assertEqual(response.status_code, 200)
+
+        # Refresh invoice from database
+        self.invoice.refresh_from_db()
+
+        # Verify status was updated
+        self.assertEqual(self.invoice.status, "pending")
+
+        # Check response data
+        data = response.json()
+        self.assertEqual(data["status"], "pending")
+        self.assertEqual(data["id"], self.invoice.pk)
+
+
+class UserInvoiceAccessTest(TestCase):
+    """Test cases for ensuring users can only access their own invoices"""
+
+    def setUp(self):
+        """Set up test data"""
+        # Create two users
+        self.user1 = User.objects.create_user(
+            username="testuser1", email="test1@example.com", password="testpass123"
+        )
+        self.user2 = User.objects.create_user(
+            username="testuser2", email="test2@example.com", password="testpass123"
+        )
+
+        # Create invoices for each user
+        self.invoice1 = Invoice.objects.create(
+            reference_number="INV-013",
+            customer_name="Customer 1",
+            customer_email="customer1@example.com",
+            total_amount=100.00,
+            created_by=self.user1,
+            status="pending",
+        )
+
+        self.invoice2 = Invoice.objects.create(
+            reference_number="INV-014",
+            customer_name="Customer 2",
+            customer_email="customer2@example.com",
+            total_amount=200.00,
+            created_by=self.user2,
+            status="paid",
+        )
+
+    def test_user_can_only_see_their_own_invoices_list(self):
+        """Test that users can only see their own invoices in list view"""
+        # Login as user1
+        self.client.login(username="testuser1", password="testpass123")
+
+        # Get invoices list
+        response = self.client.get("/api/invoices/")
+
+        # Check that the response is successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that user1 only sees their own invoice
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["id"], self.invoice1.pk)
+        self.assertEqual(data[0]["reference_number"], "INV-013")
+
+    def test_user_can_only_see_their_own_invoice_detail(self):
+        """Test that users can only see their own invoices in detail view"""
+        # Login as user1
+        self.client.login(username="testuser1", password="testpass123")
+
+        # Try to access user1's own invoice (should succeed)
+        response = self.client.get(f"/api/invoices/{self.invoice1.pk}/")
+        self.assertEqual(response.status_code, 200)
+
+        # Try to access user2's invoice (should fail with 404)
+        response = self.client.get(f"/api/invoices/{self.invoice2.pk}/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_user_can_only_mark_their_own_invoice_paid(self):
+        """Test that users can only mark their own invoices as paid"""
+        # Login as user1
+        self.client.login(username="testuser1", password="testpass123")
+
+        # Try to mark user1's own invoice as paid (should succeed)
+        response = self.client.patch(
+            f"/api/invoices/{self.invoice1.pk}/mark-paid/",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Refresh from database and verify status
+        self.invoice1.refresh_from_db()
+        self.assertEqual(self.invoice1.status, "paid")
+
+        # Try to mark user2's invoice as paid (should fail with 404)
+        response = self.client.patch(
+            f"/api/invoices/{self.invoice2.pk}/mark-paid/",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+        # Verify user2's invoice status is unchanged
+        self.invoice2.refresh_from_db()
+        self.assertEqual(self.invoice2.status, "paid")  # Should still be paid
+
+    def test_user_can_only_mark_their_own_invoice_pending(self):
+        """Test that users can only mark their own invoices as pending"""
+        # Login as user2 (who has a paid invoice)
+        self.client.login(username="testuser2", password="testpass123")
+
+        # Try to mark user2's own invoice as pending (should succeed)
+        response = self.client.patch(
+            f"/api/invoices/{self.invoice2.pk}/mark-pending/",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Refresh from database and verify status
+        self.invoice2.refresh_from_db()
+        self.assertEqual(self.invoice2.status, "pending")
+
+        # Try to mark user1's invoice as pending (should fail with 404)
+        response = self.client.patch(
+            f"/api/invoices/{self.invoice1.pk}/mark-pending/",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+        # Verify user1's invoice status is unchanged
+        self.invoice1.refresh_from_db()
+        self.assertEqual(self.invoice1.status, "pending")  # Should still be pending

@@ -22,6 +22,7 @@ This is a Django-based backend system for managing sales invoices and recording 
 - `GET /api/invoices/{id}/` - Retrieve invoice details
 - `PUT /api/invoices/{id}/` - Update invoice
 - `PATCH /api/invoices/{id}/mark-paid/` - Mark invoice as paid
+- `PATCH /api/invoices/{id}/mark-pending/` - Mark invoice as pending
 
 ### Transactions
 - `GET /api/transactions/` - List all transactions
@@ -116,6 +117,11 @@ This is a Django-based backend system for managing sales invoices and recording 
 ### Marking an Invoice as Paid
 
 - Endpoint: `PATCH /api/invoices/{id}/mark-paid/`
+- Headers: `Authorization: Bearer your_access_token_here`
+
+### Marking an Invoice as Pending
+
+- Endpoint: `PATCH /api/invoices/{id}/mark-pending/`
 - Headers: `Authorization: Bearer your_access_token_here`
 
 ## API Documentation
