@@ -21,6 +21,13 @@ class Invoice(models.Model):
     def __str__(self):
         return f"{self.reference_number} - {self.customer_name}"
 
+    def calculate_total(self):
+        """Calculate the total amount from invoice items"""
+        total = sum(item.total_price for item in self.items.all())
+        self.total_amount = total
+        self.save()
+        return total
+
     class Meta:
         ordering = ["-created_at"]
 
