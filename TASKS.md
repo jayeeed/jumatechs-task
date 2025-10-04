@@ -12,11 +12,11 @@ This document outlines the tasks required to implement the sales invoice managem
 - [x] Configure PostgreSQL database connection
 
 ### 2. Authentication System
-- [ ] Implement JWT token authentication
-- [ ] Create User model (if extending default Django user)
-- [ ] Develop login/logout API endpoints
-- [ ] Add authentication middleware
-- [ ] Secure invoice APIs with authentication
+- [x] Implement JWT token authentication
+- [x] Create User model (if extending default Django user)
+- [x] Develop login/logout API endpoints
+- [x] Add authentication middleware
+- [x] Secure invoice APIs with authentication
 
 ### 3. Invoice Management Module
 - [x] Create Invoice model
