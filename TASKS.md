@@ -6,10 +6,10 @@ This document outlines the tasks required to implement the sales invoice managem
 ## Backend Development Tasks (Django + DRF)
 
 ### 1. Project Setup
-- [ ] Initialize Django project with Django REST Framework
-- [ ] Configure settings.py with database, static files, and middleware
-- [ ] Set up project structure (apps, settings, urls)
-- [ ] Configure PostgreSQL database connection
+- [x] Initialize Django project with Django REST Framework
+- [x] Configure settings.py with database, static files, and middleware
+- [x] Set up project structure (apps, settings, urls)
+- [x] Configure PostgreSQL database connection
 
 ### 2. Authentication System
 - [ ] Implement JWT token authentication
@@ -19,16 +19,16 @@ This document outlines the tasks required to implement the sales invoice managem
 - [ ] Secure invoice APIs with authentication
 
 ### 3. Invoice Management Module
-- [ ] Create Invoice model
-- [ ] Create InvoiceItem model
-- [ ] Implement model relationships and constraints
+- [x] Create Invoice model
+- [x] Create InvoiceItem model
+- [x] Implement model relationships and constraints
 - [ ] Add validation for unique reference numbers
 - [ ] Implement auto-calculation of total amounts
 - [ ] Add validation for at least one invoice item
 
 ### 4. Transaction Module
-- [ ] Create Transaction model
-- [ ] Implement relationship with Invoice model
+- [x] Create Transaction model
+- [x] Implement relationship with Invoice model
 - [ ] Add transaction type validation (Sale, Payment)
 - [ ] Implement automatic transaction creation logic
 
@@ -53,9 +53,9 @@ This document outlines the tasks required to implement the sales invoice managem
 - [ ] Ensure totals always match with items
 
 ### 8. Database Migrations
-- [ ] Create initial migrations for all models
-- [ ] Apply migrations to database
-- [ ] Create superuser for admin access
+- [x] Create initial migrations for all models
+- [x] Apply migrations to database
+- [x] Create superuser for admin access
 
 ### 9. Testing
 - [ ] Write unit tests for invoice creation

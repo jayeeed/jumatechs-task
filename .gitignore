@@ -1,1 +1,6 @@
 .history
+.env
+.venv
+db.sqlite3
+requirements_old.txt
+__pycache__
