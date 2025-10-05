@@ -7,7 +7,7 @@ from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from decimal import Decimal
 from .models import Invoice, InvoiceItem
-from .serializers import InvoiceSerializer, InvoiceItemSerializer
+from .serializers import InvoiceSerializer
 from transactions.models import Transaction
 
 
@@ -20,32 +20,17 @@ class InvoiceListCreateView(generics.ListCreateAPIView):
         return Invoice.objects.filter(created_by=self.request.user)
 
     def perform_create(self, serializer):
-        # Save the invoice first
+        # Save the invoice using the serializer (this handles item creation)
         invoice = serializer.save(created_by=self.request.user)
 
-        # Process items if provided
-        items_data = self.request.data.get("items", [])
-        if items_data:
-            created_items = []
-            # Create invoice items
-            for item_data in items_data:
-                # Ensure proper types for quantity and unit_price
-                item_data["quantity"] = int(item_data.get("quantity", 0))
-                item_data["unit_price"] = Decimal(str(item_data.get("unit_price", 0)))
-                # Create the item and keep track of it
-                item = InvoiceItem.objects.create(invoice=invoice, **item_data)
-                created_items.append(item)
-
-            # Calculate total amount using the model method
-            total = invoice.calculate_total()
-
-            # Create sale transaction with the calculated total
-            Transaction.objects.create(
-                invoice=invoice,
-                transaction_type="sale",
-                amount=total,
-                created_by=self.request.user,
-            )
+        # Create sale transaction with the calculated total
+        # The total is already calculated by the serializer's create method
+        Transaction.objects.create(
+            invoice=invoice,
+            transaction_type="sale",
+            amount=invoice.total_amount,
+            created_by=self.request.user,
+        )
 
 
 class InvoiceDetailView(generics.RetrieveUpdateDestroyAPIView):

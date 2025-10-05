@@ -53,7 +53,7 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-80 py-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-80 py-8">
         <InvoiceList />
       </main>
 

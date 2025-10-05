@@ -138,8 +138,6 @@ Interactive API documentation is available via Swagger UI:
 - `http://localhost:8000/swagger/` - Swagger UI
 - `http://localhost:8000/redoc/` - ReDoc documentation
 
-For detailed API usage instructions, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
-
 For detailed database schema information, see [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md).
 
 ## Installation

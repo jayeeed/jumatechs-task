@@ -182,8 +182,7 @@ export function EditInvoiceDialog({
   };
 
   const subtotal = calculateTotal();
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+  const total = subtotal;
 
   if (!invoice) return null;
 
@@ -338,10 +337,6 @@ export function EditInvoiceDialog({
               <span className="font-medium">
                 ${subtotal.toFixed(2)}
               </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax (10%):</span>
-              <span className="font-medium">${tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t">
               <span>Total:</span>
