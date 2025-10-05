@@ -20,27 +20,30 @@ class InvoiceListCreateView(generics.ListCreateAPIView):
         return Invoice.objects.filter(created_by=self.request.user)
 
     def perform_create(self, serializer):
+        # Save the invoice first
         invoice = serializer.save(created_by=self.request.user)
-        # Auto-calculate total amount from items
+
+        # Process items if provided
         items_data = self.request.data.get("items", [])
         if items_data:
+            created_items = []
             # Create invoice items
             for item_data in items_data:
                 # Ensure proper types for quantity and unit_price
                 item_data["quantity"] = int(item_data.get("quantity", 0))
                 item_data["unit_price"] = Decimal(str(item_data.get("unit_price", 0)))
-                # Using InvoiceItem model manager directly
-                InvoiceItem.objects.create(invoice=invoice, **item_data)
+                # Create the item and keep track of it
+                item = InvoiceItem.objects.create(invoice=invoice, **item_data)
+                created_items.append(item)
 
             # Calculate total amount using the model method
-            invoice.calculate_total()
+            total = invoice.calculate_total()
 
-            # Create sale transaction
-            # Using Transaction model manager directly
+            # Create sale transaction with the calculated total
             Transaction.objects.create(
                 invoice=invoice,
                 transaction_type="sale",
-                amount=invoice.total_amount,
+                amount=total,
                 created_by=self.request.user,
             )
 
@@ -65,7 +68,6 @@ class InvoiceDetailView(generics.RetrieveUpdateDestroyAPIView):
             for item_data in items_data:
                 item_data["quantity"] = int(item_data.get("quantity", 0))
                 item_data["unit_price"] = Decimal(str(item_data.get("unit_price", 0)))
-                # Using InvoiceItem model manager directly
                 InvoiceItem.objects.create(invoice=invoice, **item_data)
 
             # Recalculate total amount
@@ -76,18 +78,13 @@ class InvoiceDetailView(generics.RetrieveUpdateDestroyAPIView):
 @permission_classes([IsAuthenticated])
 def mark_invoice_paid(request, pk):
     try:
-        # Using get_object_or_404 helper
         invoice = get_object_or_404(Invoice, pk=pk, created_by=request.user)
-
-        # Removed validation that only pending invoices can be marked as paid
-        # to allow users to edit invoices at any time
 
         # Update invoice status
         invoice.status = "paid"
         invoice.save()
 
         # Create payment transaction
-        # Using Transaction model manager directly
         Transaction.objects.create(
             invoice=invoice,
             transaction_type="payment",
@@ -108,7 +105,6 @@ def mark_invoice_paid(request, pk):
 @permission_classes([IsAuthenticated])
 def mark_invoice_pending(request, pk):
     try:
-        # Using get_object_or_404 helper
         invoice = get_object_or_404(Invoice, pk=pk, created_by=request.user)
 
         # Update invoice status to pending

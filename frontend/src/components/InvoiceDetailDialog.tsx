@@ -23,6 +23,7 @@ import { Loader2, ArrowUpRight, CheckCircle, Clock, CreditCard, Pencil, Trash2, 
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { EditInvoiceDialog } from "./EditInvoiceDialog";
+import { DeleteInvoiceDialog } from "./DeleteInvoiceDialog";
 
 const statusConfig = {
   paid: { label: "Paid", variant: "default" as const, className: "bg-success hover:bg-success" },
@@ -49,6 +50,7 @@ export function InvoiceDetailDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(invoice);
 
   // Update currentInvoice when invoice prop changes
@@ -106,29 +108,10 @@ export function InvoiceDetailDialog({
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: () => invoiceApi.deleteInvoice(invoice.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      toast({
-        title: "Invoice deleted",
-        description: "The invoice has been deleted successfully.",
-      });
-      onOpenChange(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this invoice? This action cannot be undone.")) {
-      deleteMutation.mutate();
-    }
+    setDeleteDialogOpen(true);
   };
 
   const formatCurrency = (amount: string) => {
@@ -306,7 +289,7 @@ export function InvoiceDetailDialog({
               {currentInvoice.status === "pending" && (
                 <Button
                   onClick={() => payMutation.mutate()}
-                  disabled={payMutation.isPending || deleteMutation.isPending || markPendingMutation.isPending}
+                  disabled={payMutation.isPending || markPendingMutation.isPending}
                   className="gap-2"
                 >
                   {payMutation.isPending ? (
@@ -325,7 +308,7 @@ export function InvoiceDetailDialog({
               {currentInvoice.status === "paid" && (
                 <Button
                   onClick={() => markPendingMutation.mutate()}
-                  disabled={markPendingMutation.isPending || deleteMutation.isPending || payMutation.isPending}
+                  disabled={markPendingMutation.isPending || payMutation.isPending}
                   className="gap-2"
                 >
                   {markPendingMutation.isPending ? (
@@ -344,7 +327,7 @@ export function InvoiceDetailDialog({
               <Button
                 variant="outline"
                 onClick={() => setEditDialogOpen(true)}
-                disabled={deleteMutation.isPending || payMutation.isPending || markPendingMutation.isPending}
+                disabled={payMutation.isPending || markPendingMutation.isPending}
                 className="gap-2"
               >
                 <Pencil className="h-4 w-4" />
@@ -353,20 +336,13 @@ export function InvoiceDetailDialog({
               <Button
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={deleteMutation.isPending || payMutation.isPending || markPendingMutation.isPending}
+                disabled={payMutation.isPending || markPendingMutation.isPending}
                 className="gap-2"
               >
-                {deleteMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
+                <>
                     <Trash2 className="h-4 w-4" />
                     Delete
                   </>
-                )}
               </Button>
             </div>
 
@@ -382,6 +358,13 @@ export function InvoiceDetailDialog({
         invoice={currentInvoice}
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
+      />
+
+      <DeleteInvoiceDialog
+        invoice={currentInvoice}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDeleted={() => onOpenChange(false)}
       />
     </>
   );
