@@ -10,8 +10,6 @@ This is a Django-based backend system for managing sales invoices and recording 
 - **Frontend (React)**: [https://jumatechs-invoice.netlify.app/](https://jumatechs-invoice.netlify.app/)
 - **Demo Video**: [https://www.loom.com/share/4e6b2a9081ec405c96f0be4d53602646?sid=27c22da9-515e-4a77-a8ea-d22b402e2d15](https://www.loom.com/share/4e6b2a9081ec405c96f0be4d53602646?sid=27c22da9-515e-4a77-a8ea-d22b402e2d15)
 
-![Video Placeholder](https://placehold.co/600x400?text=Demo+Video+Coming+Soon)
-
 ## Features
 
 - User authentication with JWT tokens
