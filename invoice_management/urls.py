@@ -20,6 +20,7 @@ from django.urls import path, include, re_path
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from . import views
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -39,6 +40,7 @@ urlpatterns = [
     path("api/auth/", include("authentication.urls")),
     path("api/invoices/", include("invoices.urls")),
     path("api/transactions/", include("transactions.urls")),
+    path("health/", views.health_check, name="health_check"),
     re_path(
         r"^swagger(?P<format>\.json|\.yaml)$",
         schema_view.without_ui(cache_timeout=0),

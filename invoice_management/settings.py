@@ -200,3 +200,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = [
+    "https://invoice.loca.lt",
+    "https://jumatechs-task.onrender.com",
+    "https://jumatechs-invoice.netlify.app",
+]
